@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/motor_model.dart';
 import '../models/rental_booking_model.dart';
+import '../providers/motor_provider.dart';
 import '../providers/rental_provider.dart';
 import '../widgets/status_badge_widget.dart';
 import '../widgets/rating_stars_widget.dart';
 import '../widgets/custom_button_widget.dart';
+import 'edit_motor_screen.dart';
 import 'edit_rental_screen.dart';
 
 class MotorDetailScreen extends StatelessWidget {
@@ -29,7 +31,58 @@ class MotorDetailScreen extends StatelessWidget {
     }
   }
 
-  void _showContactDialog(BuildContext context) {
+  void _confirmDeleteMotor(BuildContext context, MotorModel currentMotor) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: Colors.red),
+            SizedBox(width: 8),
+            Text('Hapus Unit Motor?'),
+          ],
+        ),
+        content: Text(
+          'Apakah Anda yakin ingin menghapus unit "${currentMotor.name}" dari katalog rental dan database SQLite?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Batal'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () async {
+              Navigator.pop(ctx);
+              final provider =
+                  Provider.of<MotorProvider>(context, listen: false);
+              final success = await provider.deleteMotor(currentMotor.id);
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(success
+                        ? 'Unit motor "${currentMotor.name}" berhasil dihapus!'
+                        : 'Gagal menghapus unit motor.'),
+                    backgroundColor: success ? Colors.teal : Colors.red,
+                  ),
+                );
+                if (success) {
+                  Navigator.pop(context);
+                }
+              }
+            },
+            child: const Text('Ya, Hapus'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showContactDialog(BuildContext context, MotorModel currentMotor) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -46,7 +99,7 @@ class MotorDetailScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              motor.name,
+              currentMotor.name,
               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
             ),
             const SizedBox(height: 6),
@@ -93,7 +146,7 @@ class MotorDetailScreen extends StatelessWidget {
     );
   }
 
-  void _showBookingBottomSheet(BuildContext context) {
+  void _showBookingBottomSheet(BuildContext context, MotorModel currentMotor) {
     final customerController = TextEditingController(text: 'Kynan');
     final noteController = TextEditingController();
     int rentalDays = 2;
@@ -107,7 +160,7 @@ class MotorDetailScreen extends StatelessWidget {
       ),
       builder: (ctx) => StatefulBuilder(
         builder: (context, setSheetState) {
-          final totalCost = motor.pricePerDay * rentalDays;
+          final totalCost = currentMotor.pricePerDay * rentalDays;
 
           return Padding(
             padding: EdgeInsets.only(
@@ -135,7 +188,7 @@ class MotorDetailScreen extends StatelessWidget {
                   ],
                 ),
                 Text(
-                  'Unit: ${motor.name} (${motor.formattedPrice})',
+                  'Unit: ${currentMotor.name} (${currentMotor.formattedPrice})',
                   style: const TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
@@ -245,15 +298,15 @@ class MotorDetailScreen extends StatelessWidget {
                           Provider.of<RentalProvider>(context, listen: false);
                       final newBooking = RentalBookingModel(
                         studentId: '2415051040',
-                        motorId: motor.id,
-                        motorName: motor.name,
+                        motorId: currentMotor.id,
+                        motorName: currentMotor.name,
                         customerName: customerController.text.trim().isEmpty
                             ? 'Kynan'
                             : customerController.text.trim(),
                         rentalDays: rentalDays,
-                        pricePerDay: motor.pricePerDay,
+                        pricePerDay: currentMotor.pricePerDay,
                         totalPrice: totalCost,
-                        type: motor.type,
+                        type: currentMotor.type,
                         note: noteController.text.trim().isEmpty
                             ? 'Sewa motor $rentalDays hari.'
                             : noteController.text.trim(),
@@ -268,7 +321,7 @@ class MotorDetailScreen extends StatelessWidget {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text(success
-                                ? 'Berhasil memesan ${motor.name}!'
+                                ? 'Berhasil memesan ${currentMotor.name}!'
                                 : 'Gagal menyimpan booking.'),
                             backgroundColor:
                                 success ? Colors.teal : Colors.redAccent,
@@ -288,365 +341,460 @@ class MotorDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: CustomScrollView(
-        slivers: [
-          // Collapsible Image Header with Badges
-          SliverAppBar(
-            expandedHeight: 260,
-            pinned: true,
-            backgroundColor: Colors.deepOrange,
-            foregroundColor: Colors.white,
-            flexibleSpace: FlexibleSpaceBar(
-              background: Stack(
-                fit: StackFit.expand,
-                children: [
-                  Image.network(
-                    motor.imageUrl,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => Container(
-                      color: Colors.grey.shade300,
-                      child: const Center(
-                        child: Icon(Icons.two_wheeler,
-                            size: 64, color: Colors.grey),
-                      ),
-                    ),
-                  ),
-                  const DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.black45,
-                          Colors.transparent,
-                          Colors.black87,
-                        ],
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    bottom: 16,
-                    left: 16,
-                    right: 16,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            StatusBadgeWidget(
-                              text: motor.type,
-                              color: _getTypeColor(motor.type),
-                            ),
-                            const SizedBox(width: 8),
-                            StatusBadgeWidget(
-                              text: motor.isAvailable ? 'Unit Tersedia' : 'Disewa',
-                              color: motor.isAvailable
-                                  ? Colors.green
-                                  : Colors.red,
-                              icon: motor.isAvailable
-                                  ? Icons.check_circle
-                                  : Icons.cancel,
-                            ),
-                          ],
+    return Consumer<MotorProvider>(
+      builder: (context, motorProvider, _) {
+        // Ambil data motor terbaru jika baru saja diedit
+        final currentMotor = motorProvider.motors.firstWhere(
+          (m) => m.id == motor.id,
+          orElse: () => motor,
+        );
+
+        return Scaffold(
+          body: CustomScrollView(
+            slivers: [
+              // Collapsible Image Header with Badges
+              SliverAppBar(
+                expandedHeight: 260,
+                pinned: true,
+                backgroundColor: Colors.deepOrange,
+                foregroundColor: Colors.white,
+                flexibleSpace: FlexibleSpaceBar(
+                  background: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      Image.network(
+                        currentMotor.imageUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => Container(
+                          color: Colors.grey.shade300,
+                          child: const Center(
+                            child: Icon(Icons.two_wheeler,
+                                size: 64, color: Colors.grey),
+                          ),
                         ),
-                        const SizedBox(height: 6),
-                        Text(
-                          motor.name,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                            shadows: [
-                              Shadow(blurRadius: 4, color: Colors.black),
+                      ),
+                      const DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.black45,
+                              Colors.transparent,
+                              Colors.black87,
                             ],
                           ),
                         ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            actions: [
-              Consumer<RentalProvider>(
-                builder: (context, rentalProvider, _) {
-                  final isBooked = rentalProvider.isBooked(motor.id);
-                  return IconButton(
-                    icon: Icon(
-                      isBooked ? Icons.bookmark : Icons.bookmark_border,
-                      color: isBooked ? Colors.amberAccent : Colors.white,
-                    ),
-                    tooltip: isBooked ? 'Hapus Booking' : 'Booking Motor',
-                    onPressed: () async {
-                      if (isBooked) {
-                        final success =
-                            await rentalProvider.toggleBooking(motor);
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(success
-                                  ? 'Motor dihapus dari booking tersimpan.'
-                                  : 'Gagal memperbarui status.'),
-                            ),
-                          );
-                        }
-                      } else {
-                        _showBookingBottomSheet(context);
-                      }
-                    },
-                  );
-                },
-              ),
-            ],
-          ),
-
-          // Details Content
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Price and Rating Row
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Tarif Sewa Harian',
-                            style: TextStyle(fontSize: 12, color: Colors.grey),
-                          ),
-                          Text(
-                            motor.formattedPrice,
-                            style: const TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.deepOrange,
-                            ),
-                          ),
-                        ],
                       ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: Colors.amber.shade50,
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: Colors.amber.shade300),
-                        ),
-                        child: Row(
-                          children: [
-                            RatingStarsWidget(rating: motor.rating, size: 16),
-                            const SizedBox(width: 6),
-                            Text(
-                              '${motor.rating}',
-                              style: const TextStyle(
-                                  fontWeight: FontWeight.bold, fontSize: 14),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 16),
-                  const Divider(),
-                  const SizedBox(height: 12),
-
-                  // Spesifikasi Motor
-                  const Text(
-                    'Spesifikasi Motor',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 10),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildSpecCard(
-                          icon: Icons.speed,
-                          title: 'Kapasitas Mesin',
-                          value: '${motor.cc} cc',
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: _buildSpecCard(
-                          icon: Icons.settings,
-                          title: 'Transmisi',
-                          value: motor.transmission,
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: _buildSpecCard(
-                          icon: Icons.branding_watermark,
-                          title: 'Merk Motor',
-                          value: motor.brand,
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  // Fasilitas Rental Termasuk
-                  const Text(
-                    'Fasilitas Sewa Gratis',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: motor.facilities.map((f) {
-                      return Chip(
-                        avatar: const Icon(Icons.check_circle_outline,
-                            size: 16, color: Colors.teal),
-                        label: Text(f),
-                        backgroundColor: Colors.teal.shade50,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          side: BorderSide(color: Colors.teal.shade200),
-                        ),
-                      );
-                    }).toList(),
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  // Deskripsi Unit Motor
-                  const Text(
-                    'Keterangan & Kondisi Unit',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    motor.description,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey.shade800,
-                      height: 1.5,
-                    ),
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  // Status Booking di Database jika sudah dibooking
-                  Consumer<RentalProvider>(
-                    builder: (context, rentalProvider, _) {
-                      final isBooked = rentalProvider.isBooked(motor.id);
-                      if (!isBooked) return const SizedBox.shrink();
-
-                      final bookingItem = rentalProvider.bookings
-                          .firstWhere((element) => element.motorId == motor.id);
-
-                      return Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.orange.shade50,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.orange.shade300),
-                        ),
+                      Positioned(
+                        bottom: 16,
+                        left: 16,
+                        right: 16,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Row(
-                              mainAxisAlignment:
-                                  MainAxisAlignment.spaceBetween,
                               children: [
-                                const Row(
-                                  children: [
-                                    Icon(Icons.bookmark_added,
-                                        color: Colors.deepOrange),
-                                    SizedBox(width: 6),
-                                    Text(
-                                      'Sudah Ada di Daftar Booking DB',
-                                      style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.deepOrange),
-                                    ),
-                                  ],
+                                StatusBadgeWidget(
+                                  text: currentMotor.type,
+                                  color: _getTypeColor(currentMotor.type),
                                 ),
-                                TextButton.icon(
-                                  onPressed: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) =>
-                                            EditRentalScreen(item: bookingItem),
-                                      ),
-                                    );
-                                  },
-                                  icon: const Icon(Icons.edit, size: 16),
-                                  label: const Text('Edit Sewa'),
+                                const SizedBox(width: 8),
+                                StatusBadgeWidget(
+                                  text: currentMotor.isAvailable
+                                      ? 'Unit Tersedia'
+                                      : 'Disewa',
+                                  color: currentMotor.isAvailable
+                                      ? Colors.green
+                                      : Colors.red,
+                                  icon: currentMotor.isAvailable
+                                      ? Icons.check_circle
+                                      : Icons.cancel,
                                 ),
                               ],
                             ),
+                            const SizedBox(height: 6),
                             Text(
-                              'Penyewa: ${bookingItem.customerName} (${bookingItem.rentalDays} hari) • Catatan: "${bookingItem.note}"',
+                              currentMotor.name,
                               style: const TextStyle(
-                                  fontStyle: FontStyle.italic, fontSize: 13),
+                                color: Colors.white,
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                                shadows: [
+                                  Shadow(blurRadius: 4, color: Colors.black),
+                                ],
+                              ),
                             ),
                           ],
-                        ),
-                      );
-                    },
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  // Action Buttons Bottom
-                  Row(
-                    children: [
-                      Expanded(
-                        child: CustomButtonWidget(
-                          label: 'Hubungi Rental',
-                          icon: Icons.chat,
-                          color: Colors.teal,
-                          onPressed: () => _showContactDialog(context),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Consumer<RentalProvider>(
-                          builder: (context, rentalProvider, _) {
-                            final isBooked = rentalProvider.isBooked(motor.id);
-                            return CustomButtonWidget(
-                              label: isBooked ? 'Sudah Dibooking' : 'Pesan Sekarang',
-                              icon: isBooked
-                                  ? Icons.check
-                                  : Icons.add_shopping_cart,
-                              color: isBooked
-                                  ? Colors.grey.shade700
-                                  : Colors.deepOrange,
-                              onPressed: () {
-                                if (isBooked) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text(
-                                          'Motor ini sudah ada dalam daftar booking database Anda.'),
-                                    ),
-                                  );
-                                } else {
-                                  _showBookingBottomSheet(context);
-                                }
-                              },
-                            );
-                          },
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 20),
+                ),
+                actions: [
+                  // Tombol Edit Motor
+                  IconButton(
+                    icon: const Icon(Icons.edit, color: Colors.white),
+                    tooltip: 'Edit Kolom Motor',
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              EditMotorScreen(motor: currentMotor),
+                        ),
+                      );
+                    },
+                  ),
+                  // Tombol Hapus Motor
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline, color: Colors.white),
+                    tooltip: 'Hapus Unit Motor',
+                    onPressed: () =>
+                        _confirmDeleteMotor(context, currentMotor),
+                  ),
+                  // Tombol Simpan Booking
+                  Consumer<RentalProvider>(
+                    builder: (context, rentalProvider, _) {
+                      final isBooked = rentalProvider.isBooked(currentMotor.id);
+                      return IconButton(
+                        icon: Icon(
+                          isBooked ? Icons.bookmark : Icons.bookmark_border,
+                          color: isBooked ? Colors.amberAccent : Colors.white,
+                        ),
+                        tooltip: isBooked ? 'Hapus Booking' : 'Booking Motor',
+                        onPressed: () async {
+                          if (isBooked) {
+                            final success =
+                                await rentalProvider.toggleBooking(currentMotor);
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(success
+                                      ? 'Motor dihapus dari booking tersimpan.'
+                                      : 'Gagal memperbarui status.'),
+                                ),
+                              );
+                            }
+                          } else {
+                            _showBookingBottomSheet(context, currentMotor);
+                          }
+                        },
+                      );
+                    },
+                  ),
                 ],
               ),
-            ),
+
+              // Details Content
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Price and Rating Row
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Tarif Sewa Harian',
+                                style:
+                                    TextStyle(fontSize: 12, color: Colors.grey),
+                              ),
+                              Text(
+                                currentMotor.formattedPrice,
+                                style: const TextStyle(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.deepOrange,
+                                ),
+                              ),
+                            ],
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: Colors.amber.shade50,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: Colors.amber.shade300),
+                            ),
+                            child: Row(
+                              children: [
+                                RatingStarsWidget(
+                                    rating: currentMotor.rating, size: 16),
+                                const SizedBox(width: 6),
+                                Text(
+                                  '${currentMotor.rating}',
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 16),
+                      const Divider(),
+                      const SizedBox(height: 12),
+
+                      // Spesifikasi Motor
+                      const Text(
+                        'Spesifikasi Motor',
+                        style: TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 10),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildSpecCard(
+                              icon: Icons.speed,
+                              title: 'Kapasitas Mesin',
+                              value: '${currentMotor.cc} cc',
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: _buildSpecCard(
+                              icon: Icons.settings,
+                              title: 'Transmisi',
+                              value: currentMotor.transmission,
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: _buildSpecCard(
+                              icon: Icons.branding_watermark,
+                              title: 'Merk Motor',
+                              value: currentMotor.brand,
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      // Fasilitas Rental Termasuk
+                      const Text(
+                        'Fasilitas Sewa Gratis',
+                        style: TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: currentMotor.facilities.map((f) {
+                          return Chip(
+                            avatar: const Icon(Icons.check_circle_outline,
+                                size: 16, color: Colors.teal),
+                            label: Text(f),
+                            backgroundColor: Colors.teal.shade50,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              side: BorderSide(color: Colors.teal.shade200),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      // Deskripsi Unit Motor
+                      const Text(
+                        'Keterangan & Kondisi Unit',
+                        style: TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        currentMotor.description,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey.shade800,
+                          height: 1.5,
+                        ),
+                      ),
+
+                      const SizedBox(height: 24),
+
+                      // Shortcut Edit Unit Motor
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.amber.shade50,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.amber.shade300),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Row(
+                              children: [
+                                Icon(Icons.tune, color: Colors.orange),
+                                SizedBox(width: 8),
+                                Text(
+                                  'Kelola Data Motor Ini',
+                                  style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 13),
+                                ),
+                              ],
+                            ),
+                            OutlinedButton.icon(
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: Colors.deepOrange,
+                                side: const BorderSide(color: Colors.deepOrange),
+                              ),
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        EditMotorScreen(motor: currentMotor),
+                                  ),
+                                );
+                              },
+                              icon: const Icon(Icons.edit, size: 16),
+                              label: const Text('Edit Kolom Motor'),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      // Status Booking di Database jika sudah dibooking
+                      Consumer<RentalProvider>(
+                        builder: (context, rentalProvider, _) {
+                          final isBooked =
+                              rentalProvider.isBooked(currentMotor.id);
+                          if (!isBooked) return const SizedBox.shrink();
+
+                          final bookingItem = rentalProvider.bookings.firstWhere(
+                              (element) => element.motorId == currentMotor.id);
+
+                          return Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.orange.shade50,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.orange.shade300),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    const Row(
+                                      children: [
+                                        Icon(Icons.bookmark_added,
+                                            color: Colors.deepOrange),
+                                        SizedBox(width: 6),
+                                        Text(
+                                          'Sudah Ada di Daftar Booking DB',
+                                          style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.deepOrange),
+                                        ),
+                                      ],
+                                    ),
+                                    TextButton.icon(
+                                      onPressed: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) =>
+                                                EditRentalScreen(
+                                                    item: bookingItem),
+                                          ),
+                                        );
+                                      },
+                                      icon: const Icon(Icons.edit, size: 16),
+                                      label: const Text('Edit Sewa'),
+                                    ),
+                                  ],
+                                ),
+                                Text(
+                                  'Penyewa: ${bookingItem.customerName} (${bookingItem.rentalDays} hari) • Catatan: "${bookingItem.note}"',
+                                  style: const TextStyle(
+                                      fontStyle: FontStyle.italic,
+                                      fontSize: 13),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+
+                      const SizedBox(height: 24),
+
+                      // Action Buttons Bottom
+                      Row(
+                        children: [
+                          Expanded(
+                            child: CustomButtonWidget(
+                              label: 'Hubungi Rental',
+                              icon: Icons.chat,
+                              color: Colors.teal,
+                              onPressed: () =>
+                                  _showContactDialog(context, currentMotor),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Consumer<RentalProvider>(
+                              builder: (context, rentalProvider, _) {
+                                final isBooked =
+                                    rentalProvider.isBooked(currentMotor.id);
+                                return CustomButtonWidget(
+                                  label: isBooked
+                                      ? 'Sudah Dibooking'
+                                      : 'Pesan Sekarang',
+                                  icon: isBooked
+                                      ? Icons.check
+                                      : Icons.add_shopping_cart,
+                                  color: isBooked
+                                      ? Colors.grey.shade700
+                                      : Colors.deepOrange,
+                                  onPressed: () {
+                                    if (isBooked) {
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                              'Motor ini sudah ada dalam daftar booking database Anda.'),
+                                        ),
+                                      );
+                                    } else {
+                                      _showBookingBottomSheet(
+                                          context, currentMotor);
+                                    }
+                                  },
+                                );
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../models/motor_model.dart';
 import '../providers/motor_provider.dart';
 import '../widgets/motor_card_widget.dart';
+import 'add_motor_screen.dart';
 import 'motor_detail_screen.dart';
 
 class MotorListScreen extends StatefulWidget {
@@ -33,6 +34,15 @@ class _MotorListScreenState extends State<MotorListScreen> {
     super.dispose();
   }
 
+  void _navigateToAddMotor(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const AddMotorScreen(),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -40,6 +50,21 @@ class _MotorListScreenState extends State<MotorListScreen> {
         title: const Text('Katalog Rental Motor'),
         backgroundColor: Colors.deepOrange,
         foregroundColor: Colors.white,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.add_circle_outline),
+            tooltip: 'Tambah Motor Baru',
+            onPressed: () => _navigateToAddMotor(context),
+          ),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'add_motor_fab',
+        backgroundColor: Colors.deepOrange,
+        foregroundColor: Colors.white,
+        icon: const Icon(Icons.add),
+        label: const Text('Tambah Motor'),
+        onPressed: () => _navigateToAddMotor(context),
       ),
       body: Consumer<MotorProvider>(
         builder: (context, provider, _) {
@@ -96,6 +121,10 @@ class _MotorListScreenState extends State<MotorListScreen> {
                     _buildFilterChip(provider, 'Sport'),
                     const SizedBox(width: 8),
                     _buildFilterChip(provider, 'Retro'),
+                    const SizedBox(width: 8),
+                    _buildFilterChip(provider, 'Bebek'),
+                    const SizedBox(width: 8),
+                    _buildFilterChip(provider, 'Touring'),
                   ],
                 ),
               ),
@@ -138,7 +167,7 @@ class _MotorListScreenState extends State<MotorListScreen> {
             CircularProgressIndicator(color: Colors.deepOrange),
             SizedBox(height: 14),
             Text(
-              'Mengambil data motor dari REST API...',
+              'Mengambil data motor dari database SQLite...',
               style: TextStyle(color: Colors.grey),
             ),
           ],
@@ -205,14 +234,29 @@ class _MotorListScreenState extends State<MotorListScreen> {
                 style: TextStyle(color: Colors.grey.shade600),
               ),
               const SizedBox(height: 20),
-              OutlinedButton.icon(
-                onPressed: () {
-                  _searchController.clear();
-                  provider.clearSearch();
-                  setState(() {});
-                },
-                icon: const Icon(Icons.restart_alt),
-                label: const Text('Reset Filter'),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  OutlinedButton.icon(
+                    onPressed: () {
+                      _searchController.clear();
+                      provider.clearSearch();
+                      setState(() {});
+                    },
+                    icon: const Icon(Icons.restart_alt),
+                    label: const Text('Reset Filter'),
+                  ),
+                  const SizedBox(width: 12),
+                  ElevatedButton.icon(
+                    onPressed: () => _navigateToAddMotor(context),
+                    icon: const Icon(Icons.add),
+                    label: const Text('Tambah Motor'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.deepOrange,
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -229,7 +273,7 @@ class _MotorListScreenState extends State<MotorListScreen> {
           if (constraints.maxWidth > 600) {
             final int crossAxisCount = constraints.maxWidth > 900 ? 3 : 2;
             return GridView.builder(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.fromLTRB(12, 12, 12, 80),
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: crossAxisCount,
                 crossAxisSpacing: 12,
@@ -249,7 +293,7 @@ class _MotorListScreenState extends State<MotorListScreen> {
 
           // Compact layout (<= 600px)
           return ListView.builder(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            padding: const EdgeInsets.fromLTRB(8, 8, 8, 80),
             itemCount: items.length,
             itemBuilder: (context, index) {
               final motor = items[index];

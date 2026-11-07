@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../providers/motor_provider.dart';
 import '../providers/rental_provider.dart';
 import '../widgets/motor_card_widget.dart';
+import 'add_motor_screen.dart';
 import 'motor_detail_screen.dart';
 
 class DashboardScreen extends StatelessWidget {
@@ -31,6 +32,18 @@ class DashboardScreen extends StatelessWidget {
         foregroundColor: Colors.white,
         elevation: 0,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.add_circle_outline),
+            tooltip: 'Tambah Motor Baru',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const AddMotorScreen(),
+                ),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.bookmark),
             tooltip: 'Rental Tersimpan',
@@ -137,7 +150,7 @@ class DashboardScreen extends StatelessWidget {
                           color: Colors.deepOrange,
                           title: 'Armada Motor',
                           value: '${provider.motors.length} Unit',
-                          subtitle: 'Sumber: REST API',
+                          subtitle: 'Database SQLite & API',
                           onTap: () => onNavigateToTab(1),
                         ),
                       ),

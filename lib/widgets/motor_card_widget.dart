@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/motor_model.dart';
 import '../providers/rental_provider.dart';
+import '../screens/edit_motor_screen.dart';
 import 'status_badge_widget.dart';
 import 'rating_stars_widget.dart';
 
@@ -41,7 +42,7 @@ class MotorCardWidget extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Image with Badges & Bookmark button
+            // Image with Badges & Action buttons (Edit & Booking)
             Stack(
               children: [
                 Image.network(
@@ -93,47 +94,77 @@ class MotorCardWidget extends StatelessWidget {
                     ],
                   ),
                 ),
-                // Save / Booking Button
+                // Action Buttons: Edit & Bookmark
                 Positioned(
                   top: 6,
                   right: 6,
-                  child: Consumer<RentalProvider>(
-                    builder: (context, rentalProvider, _) {
-                      final isBooked = rentalProvider.isBooked(motor.id);
-                      return CircleAvatar(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Tombol Edit Motor
+                      CircleAvatar(
                         radius: 18,
                         backgroundColor: Colors.white.withValues(alpha: 0.9),
                         child: IconButton(
                           padding: EdgeInsets.zero,
-                          iconSize: 20,
-                          icon: Icon(
-                            isBooked ? Icons.bookmark : Icons.bookmark_border,
-                            color: isBooked ? Colors.deepOrange : Colors.grey.shade700,
-                          ),
-                          onPressed: () async {
-                            final success =
-                                await rentalProvider.toggleBooking(motor);
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    success
-                                        ? (isBooked
-                                            ? '${motor.name} dihapus dari daftar rental.'
-                                            : '${motor.name} disimpan ke daftar booking rental!')
-                                        : 'Gagal memperbarui status rental.',
-                                  ),
-                                  duration: const Duration(seconds: 2),
-                                  backgroundColor: isBooked
-                                      ? Colors.grey[800]
-                                      : Colors.deepOrange,
-                                ),
-                              );
-                            }
+                          iconSize: 18,
+                          tooltip: 'Edit Motor',
+                          icon: const Icon(Icons.edit, color: Colors.deepOrange),
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    EditMotorScreen(motor: motor),
+                              ),
+                            );
                           },
                         ),
-                      );
-                    },
+                      ),
+                      const SizedBox(width: 6),
+                      // Tombol Bookmark / Simpan Booking
+                      Consumer<RentalProvider>(
+                        builder: (context, rentalProvider, _) {
+                          final isBooked = rentalProvider.isBooked(motor.id);
+                          return CircleAvatar(
+                            radius: 18,
+                            backgroundColor: Colors.white.withValues(alpha: 0.9),
+                            child: IconButton(
+                              padding: EdgeInsets.zero,
+                              iconSize: 20,
+                              tooltip: isBooked ? 'Hapus Booking' : 'Simpan Booking',
+                              icon: Icon(
+                                isBooked ? Icons.bookmark : Icons.bookmark_border,
+                                color: isBooked
+                                    ? Colors.deepOrange
+                                    : Colors.grey.shade700,
+                              ),
+                              onPressed: () async {
+                                final success =
+                                    await rentalProvider.toggleBooking(motor);
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        success
+                                            ? (isBooked
+                                                ? '${motor.name} dihapus dari daftar rental.'
+                                                : '${motor.name} disimpan ke daftar booking rental!')
+                                            : 'Gagal memperbarui status rental.',
+                                      ),
+                                      duration: const Duration(seconds: 2),
+                                      backgroundColor: isBooked
+                                          ? Colors.grey[800]
+                                          : Colors.deepOrange,
+                                    ),
+                                  );
+                                }
+                              },
+                            ),
+                          );
+                        },
+                      ),
+                    ],
                   ),
                 ),
               ],
