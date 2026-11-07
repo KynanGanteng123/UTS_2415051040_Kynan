@@ -199,7 +199,7 @@ lib/
 - **Backend/Database yang digunakan:** SQLite Database (`motorent_database.db`) via `sqflite` & `sqflite_common_ffi` dengan tabel `rental_bookings` (12 field kolom, operasi CRUD lengkap).
 - **Jumlah Screen:** 7 Screen Fungsional (`DashboardScreen`, `MotorListScreen`, `MotorDetailScreen`, `FavoritesScreen`, `AddRentalScreen`, `EditRentalScreen`, `ProfileScreen`).
 - **Jumlah Meaningful Commit:** 21 Commit Terstruktur.
-- **Hash Commit Final:** Akan tertera setelah commit final README dan berkas pengumpulan.
+- **Hash Commit Final:** `451ec11`
 - **Link APK / File APK:** `UTS_2415051040_Kynan.apk` (Tersedia pada root folder proyek: `d:\KULIAH\SEMESTER 5\Pemrograman Berbasis Mobile\UTS dan UAS\uts_2415051040_kynan\UTS_2415051040_Kynan.apk` serta pada direktori build `build\app\outputs\flutter-apk\app-release.apk`).
 - **Catatan kendala utama:**
   1. *Penanganan Cross-Drive Incremental Build pada Android Gradle*: Terjadi kendala pembacaan root file berbeda antara drive `C:\` (Pub Cache) dan `D:\` (Folder Proyek) pada kompilasi Kotlin, yang diselesaikan dengan menyetel `kotlin.incremental=false` pada file `android/gradle.properties`.
