@@ -65,6 +65,80 @@ class MotorModel {
     };
   }
 
+  factory MotorModel.fromMap(Map<String, dynamic> map) {
+    return MotorModel(
+      id: map['id'] as int? ?? 0,
+      name: map['name'] as String? ?? '',
+      brand: map['brand'] as String? ?? '',
+      type: map['type'] as String? ?? 'Matic',
+      cc: map['cc'] as int? ?? 125,
+      pricePerDay: map['price_per_day'] as int? ?? 0,
+      transmission: map['transmission'] as String? ?? 'Otomatis',
+      imageUrl: map['image_url'] as String? ?? '',
+      rating:
+          (map['rating'] is num) ? (map['rating'] as num).toDouble() : 4.5,
+      isAvailable: (map['is_available'] is int)
+          ? (map['is_available'] == 1)
+          : (map['is_available'] as bool? ?? true),
+      description: map['description'] as String? ?? '',
+      facilities: (map['facilities'] != null &&
+              map['facilities'].toString().isNotEmpty)
+          ? map['facilities']
+              .toString()
+              .split(',')
+              .map((e) => e.trim())
+              .toList()
+          : ['2 Helm SNI', 'Jas Hujan'],
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'name': name,
+      'brand': brand,
+      'type': type,
+      'cc': cc,
+      'price_per_day': pricePerDay,
+      'transmission': transmission,
+      'image_url': imageUrl,
+      'rating': rating,
+      'is_available': isAvailable ? 1 : 0,
+      'description': description,
+      'facilities': facilities.join(', '),
+    };
+  }
+
+  MotorModel copyWith({
+    int? id,
+    String? name,
+    String? brand,
+    String? type,
+    int? cc,
+    int? pricePerDay,
+    String? transmission,
+    String? imageUrl,
+    double? rating,
+    bool? isAvailable,
+    String? description,
+    List<String>? facilities,
+  }) {
+    return MotorModel(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      brand: brand ?? this.brand,
+      type: type ?? this.type,
+      cc: cc ?? this.cc,
+      pricePerDay: pricePerDay ?? this.pricePerDay,
+      transmission: transmission ?? this.transmission,
+      imageUrl: imageUrl ?? this.imageUrl,
+      rating: rating ?? this.rating,
+      isAvailable: isAvailable ?? this.isAvailable,
+      description: description ?? this.description,
+      facilities: facilities ?? this.facilities,
+    );
+  }
+
   String get formattedPrice {
     final chars = pricePerDay.toString().split('').reversed.toList();
     final parts = <String>[];

@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import '../models/motor_model.dart';
 import '../models/rental_booking_model.dart';
 
 class DatabaseService {
@@ -11,6 +12,7 @@ class DatabaseService {
 
   static Database? _database;
   static const String tableName = 'rental_bookings';
+  static const String motorTableName = 'motors';
   static const String dbName = 'motorent_database.db';
 
   Future<Database> get database async {
@@ -28,16 +30,22 @@ class DatabaseService {
     final String dbPath = await getDatabasesPath();
     final String path = join(dbPath, dbName);
 
-    return await openDatabase(
+    final db = await openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: _onCreate,
+      onUpgrade: _onUpgrade,
     );
+
+    // Memastikan kedua tabel selalu ada
+    await _ensureTables(db);
+
+    return db;
   }
 
-  Future<void> _onCreate(Database db, int version) async {
+  Future<void> _ensureTables(Database db) async {
     await db.execute('''
-      CREATE TABLE $tableName (
+      CREATE TABLE IF NOT EXISTS $tableName (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         student_id TEXT NOT NULL,
         motor_id INTEGER NOT NULL,
@@ -53,7 +61,28 @@ class DatabaseService {
       )
     ''');
 
-    // Data awal untuk demonstrasi testing
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS $motorTableName (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        brand TEXT NOT NULL,
+        type TEXT NOT NULL,
+        cc INTEGER NOT NULL,
+        price_per_day INTEGER NOT NULL,
+        transmission TEXT NOT NULL,
+        image_url TEXT NOT NULL,
+        rating REAL NOT NULL,
+        is_available INTEGER NOT NULL,
+        description TEXT NOT NULL,
+        facilities TEXT NOT NULL
+      )
+    ''');
+  }
+
+  Future<void> _onCreate(Database db, int version) async {
+    await _ensureTables(db);
+
+    // Data awal demonstrasi sewa motor
     await db.insert(tableName, {
       'student_id': '2415051040',
       'motor_id': 1,
@@ -63,11 +92,21 @@ class DatabaseService {
       'price_per_day': 85000,
       'total_price': 170000,
       'type': 'Matic',
-      'note': 'Sewa untuk survey lokasi kuliah lapangan di Pantai Lovina.',
+      'note': 'Sewa untuk survey lokasi kuliah lapangan di Pantai Lovina Singaraja.',
       'rating': 5.0,
       'created_at': DateTime.now().subtract(const Duration(days: 1)).toIso8601String(),
     });
   }
+
+  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      await _ensureTables(db);
+    }
+  }
+
+  // ==========================================
+  // CRUD OPERASI: RENTAL BOOKINGS
+  // ==========================================
 
   /// Create: Menambahkan pesanan rental baru
   Future<int> insertBooking(RentalBookingModel item) async {
@@ -121,5 +160,54 @@ class DatabaseService {
       limit: 1,
     );
     return result.isNotEmpty;
+  }
+
+  // ==========================================
+  // CRUD OPERASI: KATALOG ARMADA MOTOR
+  // ==========================================
+
+  /// Create: Menambahkan unit motor baru ke katalog SQLite
+  Future<int> insertMotor(MotorModel motor) async {
+    final db = await database;
+    final map = motor.toMap();
+    if (motor.id <= 0) {
+      map.remove('id');
+    }
+    return await db.insert(
+      motorTableName,
+      map,
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  /// Read: Mengambil seluruh unit motor dari SQLite
+  Future<List<MotorModel>> getAllMotors() async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      motorTableName,
+      orderBy: 'id DESC',
+    );
+    return maps.map((map) => MotorModel.fromMap(map)).toList();
+  }
+
+  /// Update: Memperbarui data kolom unit motor di SQLite
+  Future<int> updateMotor(MotorModel motor) async {
+    final db = await database;
+    return await db.update(
+      motorTableName,
+      motor.toMap(),
+      where: 'id = ?',
+      whereArgs: [motor.id],
+    );
+  }
+
+  /// Delete: Menghapus unit motor dari katalog SQLite
+  Future<int> deleteMotor(int id) async {
+    final db = await database;
+    return await db.delete(
+      motorTableName,
+      where: 'id = ?',
+      whereArgs: [id],
+    );
   }
 }

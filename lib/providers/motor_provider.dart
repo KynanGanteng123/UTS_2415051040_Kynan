@@ -38,6 +38,7 @@ class MotorProvider with ChangeNotifier {
     return _motors.where((m) => m.rating >= 4.7).take(4).toList();
   }
 
+  /// Memuat daftar motor dari database SQLite / REST API
   Future<void> fetchMotors() async {
     _isLoading = true;
     _errorMessage = '';
@@ -51,6 +52,55 @@ class MotorProvider with ChangeNotifier {
       _isLoading = false;
       _errorMessage = 'Gagal memuat katalog motor rental: $e';
       notifyListeners();
+    }
+  }
+
+  /// Menambahkan unit motor baru ke sistem (Create)
+  Future<bool> addMotor(MotorModel motor) async {
+    try {
+      final savedMotor = await _repository.addMotor(motor);
+      _motors.insert(0, savedMotor);
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = 'Gagal menambahkan motor baru: $e';
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Memperbarui informasi unit motor (Update)
+  Future<bool> updateMotor(MotorModel motor) async {
+    try {
+      final success = await _repository.updateMotor(motor);
+      if (success) {
+        final index = _motors.indexWhere((m) => m.id == motor.id);
+        if (index != -1) {
+          _motors[index] = motor;
+          notifyListeners();
+        }
+      }
+      return success;
+    } catch (e) {
+      _errorMessage = 'Gagal memperbarui data motor: $e';
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Menghapus unit motor dari katalog (Delete)
+  Future<bool> deleteMotor(int id) async {
+    try {
+      final success = await _repository.deleteMotor(id);
+      if (success) {
+        _motors.removeWhere((m) => m.id == id);
+        notifyListeners();
+      }
+      return success;
+    } catch (e) {
+      _errorMessage = 'Gagal menghapus motor: $e';
+      notifyListeners();
+      return false;
     }
   }
 
