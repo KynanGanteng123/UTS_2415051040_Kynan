@@ -13,43 +13,46 @@ class MotorRepository {
         _databaseService = databaseService ?? DatabaseService();
 
   /// Mengambil daftar motor rental:
-  /// Memeriksa SQLite terlebih dahulu, jika baru pertama kali,
-  /// menyinkronkan data dari REST API publik (GET) ke SQLite.
+  /// Memeriksa SQLite/Local Store terlebih dahulu. Jika kosong,
+  /// menyinkronkan data dari REST API publik (GET) lalu menyimpannya.
   Future<List<MotorModel>> getMotors() async {
-    var dbMotors = await _databaseService.getAllMotors();
+    try {
+      var dbMotors = await _databaseService.getAllMotors();
 
-    if (dbMotors.isEmpty) {
-      try {
-        final apiMotors = await _apiService.fetchMotors();
-        for (final motor in apiMotors) {
-          await _databaseService.insertMotor(motor);
+      if (dbMotors.isEmpty) {
+        try {
+          final apiMotors = await _apiService.fetchMotors();
+          for (final motor in apiMotors) {
+            await _databaseService.insertMotor(motor);
+          }
+          dbMotors = await _databaseService.getAllMotors();
+          if (dbMotors.isNotEmpty) return dbMotors;
+          return apiMotors;
+        } catch (_) {
+          return await _apiService.fetchMotors();
         }
-        dbMotors = await _databaseService.getAllMotors();
-      } catch (_) {
-        // Fallback jika terjadi kendala pada database
       }
-    }
 
-    if (dbMotors.isEmpty) {
+      return dbMotors;
+    } catch (_) {
+      // Fallback mutlak ke API jika terjadi kendala
       return await _apiService.fetchMotors();
     }
-
-    return dbMotors;
   }
 
-  /// Menambahkan motor baru ke database SQLite
+  /// Menambahkan motor baru ke sistem (SQLite / Local Store)
   Future<MotorModel> addMotor(MotorModel motor) async {
     final newId = await _databaseService.insertMotor(motor);
     return motor.copyWith(id: newId);
   }
 
-  /// Memperbarui kolom data motor di database SQLite
+  /// Memperbarui kolom data motor
   Future<bool> updateMotor(MotorModel motor) async {
     final count = await _databaseService.updateMotor(motor);
     return count > 0;
   }
 
-  /// Menghapus motor dari database SQLite
+  /// Menghapus motor dari katalog
   Future<bool> deleteMotor(int id) async {
     final count = await _databaseService.deleteMotor(id);
     return count > 0;
