@@ -202,8 +202,8 @@ lib/
 - **REST API yang digunakan:** GitHub Raw Hosted REST API Endpoint (`https://raw.githubusercontent.com/KynanGanteng123/UTS_2415051040_Kynan/main/assets/data/motor_api.json`) dengan parsing JSON model Dart & Offline Fallback Dataset.
 - **Backend/Database yang digunakan:** SQLite Database (`motorent_database.db`) via `sqflite` & `sqflite_common_ffi` dengan 2 tabel (`motors` dan `rental_bookings`), masing-masing dengan 12 field kolom dan operasi CRUD lengkap.
 - **Jumlah Screen:** 9 Screen Fungsional (`DashboardScreen`, `MotorListScreen`, `MotorDetailScreen`, `AddMotorScreen`, `EditMotorScreen`, `FavoritesScreen`, `AddRentalScreen`, `EditRentalScreen`, `ProfileScreen`).
-- **Jumlah Meaningful Commit:** 27 Commit Terstruktur.
-- **Hash Commit Final:** `ee0eb02`
+- **Jumlah Meaningful Commit:** 29 Commit Terstruktur.
+- **Hash Commit Final:** `57a5f64`
 - **Link APK / File APK:** `UTS_2415051040_Kynan.apk` (Tersedia pada root folder proyek: `d:\KULIAH\SEMESTER 5\Pemrograman Berbasis Mobile\UTS dan UAS\uts_2415051040_kynan\UTS_2415051040_Kynan.apk` serta pada direktori build `build\app\outputs\flutter-apk\app-release.apk`).
 - **Catatan kendala utama:**
   1. *Penanganan Cross-Drive Incremental Build pada Android Gradle*: Terjadi kendala pembacaan root file berbeda antara drive `C:\` (Pub Cache) dan `D:\` (Folder Proyek) pada kompilasi Kotlin, yang diselesaikan dengan menyetel `kotlin.incremental=false` pada file `android/gradle.properties`.
